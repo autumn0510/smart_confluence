@@ -1,0 +1,73 @@
+#!/bin/bash
+
+if !(type "jq" > /dev/null 2>&1); then
+  echo 'jqコマンドをインストールしてください'
+  exit 1
+fi
+
+source "config.sh"
+
+function get_latest_child_page() {
+  if [ $# != 1 ]; then
+    echo '親ページのIDをひとつ引数に渡してください'
+    exit 1
+  fi
+
+  parent_page_id=$1
+  curl -sS -X GET "https://${COMPANY_SERVER_URL}/wiki/rest/api/content/${parent_page_id}/child/page" \
+    -u "${EMAIL}:${API_TOKEN}" \
+    -H 'Accept: application/json' \
+    -H 'Content-Type: application/json' | jq -r '.results | sort_by(.version.when)[-1]'
+}
+
+function get_latest_month_page() {
+  latest_year_page_id=`get_latest_child_page ${ROOT_PAGE_ID} | jq -r .id`
+  get_latest_child_page ${latest_year_page_id}
+}
+
+function calculate_next_beginning_of_week() {
+  beginning_of_last_week=$1
+  unixtime=`date -j -f "%Y/%m/%d" ${beginning_of_last_week} "+%s"`
+  date -v +7d -r ${unixtime} +"%Y/%m/%d"
+}
+
+function copy_api() {
+  if [ $# != 4 ]; then
+    echo 'ArgumentError'
+    exit 1
+  fi
+
+  page_id_to_copy=$1
+  destination_page_id=$2
+  new_title_name=$3
+  old_title_name=$4
+
+  curl -sS -X POST "https://${COMPANY_SERVER_URL}/wiki/rest/api/content/${page_id_to_copy}/pagehierarchy/copy" \
+    -u "${EMAIL}:${API_TOKEN}" \
+    -H 'Accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -d "{
+      \"copyAttachments\": true,
+      \"copyPermissions\": true,
+      \"copyProperties\": true,
+      \"copyLabels\": true,
+      \"copyCustomContents\": true,
+      \"copyDescendants\": true,
+      \"destinationPageId\": \"${destination_page_id}\",
+      \"titleOptions\": {
+        \"replace\": \"${new_title_name}\",
+        \"search\": \"${old_title_name}\"
+      }
+    }"
+}
+
+function copy_template() {
+  latest_month_page_id=`get_latest_month_page | jq -r .id`
+  latest_week_page=`get_latest_child_page ${latest_month_page_id}`
+  latest_week_page_title=`echo ${latest_week_page} | jq -r .title`
+  beginning_of_next_week=`calculate_next_beginning_of_week ${latest_week_page_title%%週*}`
+
+  copy_api ${TEMPLATE_PAGE_ID} ${latest_month_page_id} ${beginning_of_next_week} 'YYYY/MM/DD'
+}
+
+copy_template

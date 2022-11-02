@@ -31,6 +31,25 @@ function calculate_next_beginning_of_week() {
   date -v +7d -r ${unixtime} +"%Y/%m/%d"
 }
 
+function create_new_month_page() {
+  latest_month=$1
+  next_month=$2
+
+  if [ ${latest_month} != ${next_month} ]; then
+    latest_year_page_id=`get_latest_child_page ${ROOT_PAGE_ID} | jq -r .id`
+    curl -sS -X POST "https://${COMPANY_SERVER_URL}/wiki/rest/api/content/" \
+      -u "${EMAIL}:${API_TOKEN}" \
+      -H 'Accept: application/json' \
+      -H 'Content-Type: application/json' \
+      -d "{
+        \"title\": \"RENOSY X ${next_month} 振り返り\",
+        \"type\": \"page\",
+        \"space\": { \"key\": \"${SPACE_KEY}\"},
+        \"ancestors\": [{ \"id\": \"${latest_year_page_id}\" }]
+      }"
+  fi
+}
+
 function copy_api() {
   if [ $# != 4 ]; then
     echo 'ArgumentError'
@@ -65,9 +84,16 @@ function copy_template() {
   latest_month_page_id=`get_latest_month_page | jq -r .id`
   latest_week_page=`get_latest_child_page ${latest_month_page_id}`
   latest_week_page_title=`echo ${latest_week_page} | jq -r .title`
-  beginning_of_next_week=`calculate_next_beginning_of_week ${latest_week_page_title%%週*}`
+  beginning_of_next_week=`calculate_next_beginning_of_week ${latest_week_page_title#*振り返り }`
+  latest_month=`echo ${latest_week_page_title#*振り返り } | cut -d "/" -f1,2`
+  next_month=`echo ${beginning_of_next_week#*振り返り } | cut -d "/" -f1,2`
+  new_month_page_id=`create_new_month_page ${latest_month} ${next_month} | jq -r .id`
 
-  copy_api ${TEMPLATE_PAGE_ID} ${latest_month_page_id} ${beginning_of_next_week} 'YYYY/MM/DD'
+  if [ ${new_month_page_id} ]; then
+    copy_api ${TEMPLATE_PAGE_ID} ${new_month_page_id} ${beginning_of_next_week} 'YYYY/MM/DD'
+  else
+    copy_api ${TEMPLATE_PAGE_ID} ${latest_month_page_id} ${beginning_of_next_week} 'YYYY/MM/DD'
+  fi
 }
 
 copy_template

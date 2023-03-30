@@ -104,4 +104,7 @@ function copy_template() {
 }
 
 copy_template ${X_TEMPLATE_PAGE_ID} ${X_ROOT_PAGE_ID} "RENOSY X"
+wait
+sleep 5
+wait
 copy_template ${THIRD_TEMPLATE_PAGE_ID} ${THIRD_ROOT_PAGE_ID} "3rd"

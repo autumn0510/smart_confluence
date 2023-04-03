@@ -1,6 +1,6 @@
 #!/bin/bash
 
-readonly COMPANY_SERVER_URL='https://[この部分]/'
+readonly COMPANY_SERVER_URL='https://[この部分のみ]/'
 readonly EMAIL='アカウントのメールアドレス'
 readonly API_TOKEN='API トークン（作成の手順は README.md に記載）'
 readonly SPACE_KEY=''

@@ -14,7 +14,7 @@ function get_latest_child_page() {
   fi
 
   parent_page_id=$1
-  curl -sS -X GET "https://${COMPANY_SERVER_URL}/wiki/rest/api/content/${parent_page_id}/child/page" \
+  curl -sS -X GET "https://${COMPANY_SERVER_DOMAIN}/wiki/rest/api/content/${parent_page_id}/child/page" \
     -u "${EMAIL}:${API_TOKEN}" \
     -H 'Accept: application/json' \
     -H 'Content-Type: application/json' | jq -r '.results | sort_by(.version.when)[-1]'
@@ -40,7 +40,7 @@ function create_new_month_page() {
 
   if [ ${latest_month} != ${next_month} ]; then
     latest_year_page_id=`get_latest_child_page ${root_page_id} | jq -r .id`
-    curl -sS -X POST "https://${COMPANY_SERVER_URL}/wiki/rest/api/content/" \
+    curl -sS -X POST "https://${COMPANY_SERVER_DOMAIN}/wiki/rest/api/content/" \
       -u "${EMAIL}:${API_TOKEN}" \
       -H 'Accept: application/json' \
       -H 'Content-Type: application/json' \
@@ -64,7 +64,7 @@ function copy_api() {
   new_title_name=$3
   old_title_name=$4
 
-  curl -sS -X POST "https://${COMPANY_SERVER_URL}/wiki/rest/api/content/${page_id_to_copy}/pagehierarchy/copy" \
+  curl -sS -X POST "https://${COMPANY_SERVER_DOMAIN}/wiki/rest/api/content/${page_id_to_copy}/pagehierarchy/copy" \
     -u "${EMAIL}:${API_TOKEN}" \
     -H 'Accept: application/json' \
     -H 'Content-Type: application/json' \

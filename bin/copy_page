@@ -96,7 +96,7 @@ function copy_template() {
   next_month=`echo ${beginning_of_next_week#*振り返り } | cut -d "/" -f1,2`
   new_month_page_id=`create_new_month_page ${latest_month} ${next_month} ${root_page_id} "${page_title_prefix}" | jq -r .id`
 
-  if [ ${new_month_page_id} ]; then
+  if [ -z ${new_month_page_id} ]; then
     copy_api ${template_page_id} ${new_month_page_id} ${beginning_of_next_week} 'YYYY/MM/DD'
   else
     copy_api ${template_page_id} ${latest_month_page_id} ${beginning_of_next_week} 'YYYY/MM/DD'
